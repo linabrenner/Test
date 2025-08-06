@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>jsPsych Full Test + WebGazer</title>
+  <link href="./jspsych/dist/jspsych.css" rel="stylesheet" />
+  <script src="https://webgazer.cs.brown.edu/webgazer.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      text-align: center;
+      background-color: #f0f0f0;
+      margin: 0;
+      padding: 2em;
+    }
+    .stimulus {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      font-size: 80px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div id="jspsych-target"></div>
+
+  <script src="./jspsych/dist/jspsych.js"></script>
+  <script src="./jspsych/dist/plugin-html-keyboard-response.js"></script>
+  <script>
+    const jsPsych = initJsPsych({
+      display_element: 'jspsych-target',
+      on_finish: function () {
+        const csv = jsPsych.data.get().csv();
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'full_gaze_study.csv';
+        a.click();
+      }
+    });
+
+    let gazeData = [];
+
+    window.onload = async function () {
+      await webgazer.setRegression('ridge');
+      webgazer.setGazeListener((data, timestamp) => {
+        if (data) {
+          gazeData.push({ x: data.x, y: data.y, t: timestamp });
+        }
+      });
+      webgazer.showVideoPreview(false);
+      webgazer.showPredictionPoints(true);
+      webgazer.begin();
+    };
+
+    function createTrial(stimulus, isTarget, taskLabel) {
+      return {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: `<div class='stimulus'>${stimulus}</div>`,
+        choices: [' '],
+        trial_duration: 1000,
+        response_ends_trial: true,
+        data: {
+          task: taskLabel,
+          stimulus_value: stimulus,
+          is_target: isTarget,
+          correct_response: isTarget ? ' ' : null
+        },
+        on_finish: function (data) {
+          data.correct = data.correct_response === null
+            ? data.response === null
+            : data.response === ' ';
+          if (gazeData.length > 0) {
+            const last = gazeData[gazeData.length - 1];
+            data.gaze_x = last.x;
+            data.gaze_y = last.y;
+          } else {
+            data.gaze_x = null;
+            data.gaze_y = null;
+          }
+          data.gaze_samples = JSON.stringify(gazeData);
+          gazeData = [];
+        }
+      };
+    }
+
+    function createBlock(stimuli, targetFn, taskLabel) {
+      const trials = [];
+      let previousStim = null;
+
+      const shuffled = jsPsych.randomization.shuffle(stimuli);
+
+      shuffled.forEach(stim => {
+        // Prüfe auf direkte Wiederholung:
+        if (stim === previousStim) {
+          // Ziehe ein neues Item, das sich unterscheidet:
+          const alternatives = stimuli.filter(s => s !== previousStim);
+          stim = jsPsych.randomization.sampleWithoutReplacement(alternatives, 1)[0];
+        }
+
+        previousStim = stim;
+        trials.push(createTrial(stim, targetFn(stim), taskLabel));
+      });
+
+      return trials;
+    }
+
+    // --- BLOCK 1: Number - Target: 3 ---
+    const numberBlock = createBlock(
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 3, 3, 3, 3, 3, 3, 3, 1, 2, 3, 4, 5, 6, 7, 8, 9, 3, 3, 3, 3, 3, 3, 3, 1, 2, 3, 4, 5, 6, 7, 8, 9, 3, 3, 3, 3, 3, 3, 3, 1, 2, 3, 4, 5, 6, 7, 8, 9, 3, 3, 3, 3, 3, 3, 3, 1, 2, 3, 4, 5, 6, 7, 8, 9, 3, 3, 3, 3, 3, 3, 3],
+      n => n === 3,
+      'number_go_nogo'
+    );
+
+    // --- BLOCK 2: Letter - Target: X ---
+    const letterBlock = createBlock(
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZXXXXXXXXXXXXXXABCDEFGHIJKLMNOPQRSTUVWXYZXXXXXXXXXXXXXXABCDEFGHIJKLMNOPQRSTUVWXYZXXXXXXXXXXXXXXABCDEFGHIJKLMNOPQRSTUVWXYZXXXXXXXXXXXXXX'.split(''),
+      l => l === 'X',
+      'letter_go_nogo'
+    );
+
+    // --- BLOCK 3: Number - Target: 4 OR 9 ---
+    const numberBlock2 = createBlock(
+      [1, 2, 3, 4, 5, 6, 7, 8, 9, 4, 4, 4, 4, 4, 4, 4, 9, 9, 9, 9, 9, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 4, 4, 4, 4, 4, 4, 4, 9, 9, 9, 9, 9, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 4, 4, 4, 4, 4, 4, 4, 9, 9, 9, 9, 9, 9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 4, 4, 4, 4, 4, 4, 4, 9, 9, 9, 9, 9, 9],
+      n => n === 4 || n === 9,
+      'number_go_nogo2'
+    );
+    // --- BLOCK 4: Letter - Target: O ---
+    const letterBlock2 = createBlock(
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZOOOOOOOOOOOOOABCDEFGHIJKLMNOPQRSTUVWXYZOOOOOOOOOOOOOABCDEFGHIJKLMNOPQRSTUVWXYZOOOOOOOOOOOOOABCDEFGHIJKLMNOPQRSTUVWXYZOOOOOOOOOOOOO'.split(''),
+      l => l === 'O',
+      'letter_go_nogo2'
+    );
+    // --- BLOCK 5: Letter - Target: Q,Y ---
+    const letterBlock3 = createBlock(
+      'ABCDEFGHIJKLMNOPQRSTUVWXYZQQQQQQQQQQQYYYYYYYYYYYYABCDEFGHIJKLMNOPQRSTUVWXYZQQQQQQQQQQQYYYYYYYYYYYYABCDEFGHIJKLMNOPQRSTUVWXYZQQQQQQQQQQQYYYYYYYYYYYYABCDEFGHIJKLMNOPQRSTUVWXYZQQQQQQQQQQQYYYYYYYYYYY'.split(''),
+      l => l === 'Q' || l === 'Y',
+      'letter_go_nogo3'
+    );
+
+    const fullTimeline = [
+      {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: "<p>Block 1: Drücke Leertaste bei jeder <strong>3</strong>.</p>",
+        trial_duration: 3000
+      },
+      ...numberBlock,
+      {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: "<p>Block 2: Drücke Leertaste bei jedem <strong>X</strong>.</p>",
+        trial_duration: 3000
+      },
+      ...letterBlock,
+      {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: "<p>Block 3: Drücke Leertaste bei jeder <strong>4</strong> oder <strong>9</strong>.</p>",
+        trial_duration: 3000
+      },
+      ...numberBlock2,
+      {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: "<p>Block 4: Drücke Leertaste bei jedem <strong>O</strong>.</p>",
+        trial_duration: 3000
+      },
+      ...letterBlock2,
+      {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: "<p>Block 5: Drücke Leertaste bei jedem <strong>Q</strong> und <strong>Y</strong>.</p>",
+        trial_duration: 3000
+      },
+      ...letterBlock3,
+      {
+        type: jsPsychHtmlKeyboardResponse,
+        stimulus: "<p>Test beendet. Daten werden gespeichert.</p>",
+        trial_duration: 3000
+      }
+    ];
+
+    jsPsych.run(fullTimeline);
+  </script>
+</body>
+</html>
