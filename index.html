@@ -63,8 +63,8 @@
 
   <!-- ID-Eingabe -->
   <div id="participant-id-screen">
-    <h1>Bitte gib deinen Namen ein:</h1>
-    <input type="text" id="participant-id-input" placeholder="Name" />
+    <h1>Bitte ID eingeben:</h1>
+    <input type="text" id="participant-id-input" placeholder="Probanden-ID" />
     <button id="confirm-id-btn">OK</button>
   </div>
 
@@ -198,38 +198,38 @@
     const fullTimeline = [
       {
         type: jsPsychHtmlKeyboardResponse,
-        stimulus: "<p>Block 1: Drücke Leertaste bei jeder <strong>3</strong>.</p>",
+        stimulus: "<p>Block 1: Drücke die Leertaste bei jeder <strong>3</strong>.</p>",
         trial_duration: 8000
       },
       ...numberBlock,
       {
         type: jsPsychHtmlKeyboardResponse,
-        stimulus: "<p>Block 2: Drücke Leertaste bei jedem <strong>X</strong>.</p>",
+        stimulus: "<p>Block 2: Drücke die Leertaste bei jedem <strong>X</strong>.</p>",
         trial_duration: 8000
       },
       ...letterBlock,
       {
         type: jsPsychHtmlKeyboardResponse,
-        stimulus: "<p>Block 3: Drücke Leertaste bei jeder <strong>4</strong> oder <strong>9</strong>.</p>",
+        stimulus: "<p>Block 3: Drücke die Leertaste bei jeder <strong>4</strong> oder <strong>9</strong>.</p>",
         trial_duration: 8000
       },
       ...numberBlock2,
       {
         type: jsPsychHtmlKeyboardResponse,
-        stimulus: "<p>Block 4: Drücke Leertaste bei jedem <strong>O</strong>.</p>",
+        stimulus: "<p>Block 4: Drücke die Leertaste bei jedem <strong>O</strong>.</p>",
         trial_duration: 8000
       },
       ...letterBlock2,
       {
         type: jsPsychHtmlKeyboardResponse,
-        stimulus: "<p>Block 5: Drücke Leertaste bei jedem <strong>Q</strong> und <strong>Y</strong>.</p>",
+        stimulus: "<p>Block 5: Drücke die Leertaste bei jedem <strong>Q</strong> und <strong>Y</strong>.</p>",
         trial_duration: 8000
       },
       ...letterBlock3,
       
       {
         type: jsPsychHtmlKeyboardResponse,
-        stimulus: "<p>Block 6: Drücke Leertaste bei <strong>jeder Zahl</strong> außer bei <strong>3</strong>.</p>",
+        stimulus: "<p>Block 6: Drücke die Leertaste bei <strong>jeder Zahl</strong> außer bei <strong>3</strong>.</p>",
         trial_duration: 8000
       },
       ...sartBlock,
