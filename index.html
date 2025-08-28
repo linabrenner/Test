@@ -13,7 +13,7 @@
       margin: 0;
       padding: 2em;
     }
-    p{
+    p {
       font-size: 28px;
     }
     .stimulus {
@@ -25,12 +25,8 @@
       font-weight: bold;
     }
     button {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      z-index: 9999;
-      font-size: 2em;
-      padding: 20px 40px;
+      font-size: 1.5em;
+      padding: 15px 30px;
       background-color: #007bff;
       color: white;
       border: none;
@@ -39,13 +35,8 @@
       cursor: pointer;
       transition: background-color 0.3s;
     }
-
     button:hover {
       background-color: #0056b3;
-    }
-
-    #pause-button {
-      right: 200px; 
     }
 
     #intro-text {
@@ -56,6 +47,52 @@
       max-width: 800px;
       line-height: 1.5;
     }
+
+    /* Overlay für Pause */
+    #pause-overlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+    }
+
+    #pause-message {
+      background: white;
+      padding: 40px 60px;
+      border-radius: 15px;
+      text-align: center;
+      box-shadow: 0 0 20px rgba(0,0,0,0.5);
+    }
+
+    #pause-message h1 {
+      font-size: 60px;
+      margin-bottom: 20px;
+    }
+
+    #pause-message p {
+      font-size: 22px;
+      margin-bottom: 30px;
+    }
+
+    #participant-id-input {
+    font-size: 1.5em;
+    padding: 12px 20px;
+    width: 300px;
+    border-radius: 10px;
+    border: 2px solid #007bff;
+    text-align: center;
+    }
+
+    .block-instruction {
+    font-size: 36px;
+    font-weight: bold;
+    line-height: 1.6;
+    }
+
 
   </style>
 </head>
@@ -68,9 +105,9 @@
     <button id="confirm-id-btn">OK</button>
   </div>
 
-   <!-- Einleitungstext -->
+  <!-- Einleitungstext -->
   <div id="intro-text">
-    <h2>Willkommen zur Produktivitäts-Studie!</h2>
+    <h2>Willkommen zur Produktivitätsstudie!</h2>
     <p>
       In diesem Test werden Ihnen nacheinander verschiedene Buchstaben oder Zahlen auf dem Bildschirm angezeigt.  
       Ihre Aufgabe ist es, so schnell und genau wie möglich auf bestimmte Zeichen mit der <strong>Leertaste</strong> zu reagieren.
@@ -80,25 +117,27 @@
       Vor jedem Block erhalten Sie eine kurze Erklärung, welche Regel gerade gilt.
     </p>
     <p>
-      Falls eine Unterbrechung startet, klicken Sie bitte auf den <strong>Pause-Button</strong>.  
-      Der Test kann erst fortgeführt werden, wenn die Unterbrechung beendet ist und Sie den Button wieder auf <strong>Fortsetzen</strong> gestellt haben.
-    </p>
-    <p>
-      Der gesamte Test dauert einige Minuten. Bitte konzentrieren Sie sich gut.
+      Während des Tests kommt es automatisch zu Unterbrechungen.  
+      Sie können erst weitermachen, wenn die Unterbrechung beendet ist und Sie auf <strong>Fortsetzen</strong> klicken.
     </p>
     <p><strong>Wenn Sie bereit sind, klicken Sie auf „Start“, um den Test zu beginnen.</strong></p>
+    <button id="start-button">Start</button>
   </div>
 
-
+  <!-- Overlay für Pausen -->
+  <div id="pause-overlay">
+    <div id="pause-message">
+      <h1>UNTERBRECHUNG</h1>
+      <p>Bitte klicken Sie auf <strong>Fortsetzen</strong>, um weiterzumachen.</p>
+      <button id="pause-button">Fortsetzen</button>
+    </div>
+  </div>
 
   <div id="jspsych-target"></div>
-  <button id="start-button" style="display:none;">Start</button>
-  <button id="pause-button" style="display:none;">Pause</button>
 
   <script src="./jspsych/dist/jspsych.js"></script>
   <script src="./jspsych/dist/plugin-html-keyboard-response.js"></script>
   <script>
-    //https://linabrenner.github.io/Test/ 
     const jsPsych = initJsPsych({
       display_element: 'jspsych-target',
       on_finish: function () {
@@ -136,153 +175,116 @@
     function createBlock(stimuli, targetFn, taskLabel) {
       const trials = [];
       let previousStim = null;
-
       const shuffled = jsPsych.randomization.shuffle(stimuli);
 
       shuffled.forEach(stim => {
-        // Prüfe auf direkte Wiederholung:
         if (stim === previousStim) {
-          // Ziehe ein neues Item, das sich unterscheidet:
           const alternatives = stimuli.filter(s => s !== previousStim);
           stim = jsPsych.randomization.sampleWithoutReplacement(alternatives, 1)[0];
         }
-
         previousStim = stim;
         trials.push(createTrial(stim, targetFn(stim), taskLabel));
       });
-
       return trials;
     }
 
-    // --- BLOCK 1: Number - Target: 3 ---
+    // Blöcke
     const numberBlock = createBlock(
-      jsPsych.randomization.repeat([1, 2, 3, 4, 5, 6, 7, 8, 9, 3, 3], 10), 
+      jsPsych.randomization.repeat([1,2,3,4,5,6,7,8,9,3,3], 8), 
       n => n === 3,
       'number_go_nogo'
     );
-
-    // --- BLOCK 2: Letter - Target: X ---
     const letterBlock = createBlock(
-      jsPsych.randomization.repeat('ABCDEFGHIJKLMNOPQRSTUVWXYZXXXXX'.split(''), 10), 
+      jsPsych.randomization.repeat('ABCDEFGHIJKLMNOPQRSTUVWXYZXXXXX'.split(''), 7), 
       l => l === 'X',
       'letter_go_nogo'
     );
-
-    // --- BLOCK 3: Number - Target: 4 OR 9 ---
     const numberBlock2 = createBlock(
-      jsPsych.randomization.repeat([1, 2, 3, 4, 5, 6, 7, 8, 9, 4, 4, 9, 9], 10), 
+      jsPsych.randomization.repeat([1,2,3,4,5,6,7,8,9,4,4,9,9], 8), 
       n => n === 4 || n === 9,
       'number_go_nogo2'
     );
-    // --- BLOCK 4: Letter - Target: O ---
+    
     const letterBlock2 = createBlock(
-      jsPsych.randomization.repeat('ABCDEFGHIJKLMNOPQRSTUVWXYZOOOOO'.split(''), 10), 
-      l => l === 'O',
+      jsPsych.randomization.repeat('ABCDEFGHIJKLMNOPQRSTUVWXYZQQQYYY'.split(''), 7), 
+      l => l === 'Q' || l === 'Y',
       'letter_go_nogo2'
     );
-    // --- BLOCK 5: Letter - Target: Q,Y ---
-    const letterBlock3 = createBlock(
-      jsPsych.randomization.repeat('ABCDEFGHIJKLMNOPQRSTUVWXYZQQQYYY'.split(''), 10), 
-      l => l === 'Q' || l === 'Y',
-      'letter_go_nogo3'
-    );
-
-    // --- BLOCK 6: SART – Reagiere bei allen Zahlen außer 3 ---
     const sartBlock = createBlock(
-      jsPsych.randomization.repeat([1, 2, 3, 4, 5, 6, 7, 8, 9], 10), 
-      n => n !== 3, // Ziel: ALLE außer 3
+      jsPsych.randomization.repeat([1,2,3,4,5,6,7,8,9], 8), 
+      n => n !== 3,
       'sart_number'
     );
-
+    const sartBlock2 = createBlock(
+      jsPsych.randomization.repeat('ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''), 7), 
+      l => l !== 'O',
+      'sart_letter'
+    );
 
     const fullTimeline = [
-      {
-        type: jsPsychHtmlKeyboardResponse,
-        stimulus: "<p>Block 1: Drücke die Leertaste bei jeder <strong>3</strong>.</p>",
-        trial_duration: 8000
-      },
+      { type: jsPsychHtmlKeyboardResponse, stimulus: "<p class='block-instruction'>Block 1: Drücke die Leertaste bei jeder <strong>3</strong>.</p>", trial_duration: 8000 },
       ...numberBlock,
-      {
-        type: jsPsychHtmlKeyboardResponse,
-        stimulus: "<p>Block 2: Drücke die Leertaste bei jedem <strong>X</strong>.</p>",
-        trial_duration: 8000
-      },
+      { type: jsPsychHtmlKeyboardResponse, stimulus: "<p class='block-instruction'>Block 2: Drücke die Leertaste bei jedem <strong>X</strong>.</p>", trial_duration: 8000 },
       ...letterBlock,
-      {
-        type: jsPsychHtmlKeyboardResponse,
-        stimulus: "<p>Block 3: Drücke die Leertaste bei jeder <strong>4</strong> oder <strong>9</strong>.</p>",
-        trial_duration: 8000
-      },
+      { type: jsPsychHtmlKeyboardResponse, stimulus: "<p class='block-instruction'>Block 3: Drücke die Leertaste bei jeder <strong>4</strong> oder <strong>9</strong>.</p>", trial_duration: 8000 },
       ...numberBlock2,
-      {
-        type: jsPsychHtmlKeyboardResponse,
-        stimulus: "<p>Block 4: Drücke die Leertaste bei jedem <strong>O</strong>.</p>",
-        trial_duration: 8000
-      },
+      { type: jsPsychHtmlKeyboardResponse, stimulus: "<p class='block-instruction'>Block 4: Drücke die Leertaste bei jedem <strong>Q</strong> und <strong>Y</strong>.</p>", trial_duration: 8000 },
       ...letterBlock2,
-      {
-        type: jsPsychHtmlKeyboardResponse,
-        stimulus: "<p>Block 5: Drücke die Leertaste bei jedem <strong>Q</strong> und <strong>Y</strong>.</p>",
-        trial_duration: 8000
-      },
-      ...letterBlock3,
-      
-      {
-        type: jsPsychHtmlKeyboardResponse,
-        stimulus: "<p>Block 6: Drücke die Leertaste bei <strong>jeder Zahl</strong> außer bei <strong>3</strong>.</p>",
-        trial_duration: 8000
-      },
+      { type: jsPsychHtmlKeyboardResponse, stimulus: "<p class='block-instruction'>Block 5: Drücke die Leertaste bei <strong>jeder Zahl</strong> außer bei <strong>3</strong>.</p>", trial_duration: 8000 },
       ...sartBlock,
-      {
-        type: jsPsychHtmlKeyboardResponse,
-        stimulus: "<p>Vielen Dank für deine Teilnahme! Der Test ist beendet. Die Daten werden gespeichert.</p>",
-        trial_duration: 10000
-      }
+      { type: jsPsychHtmlKeyboardResponse, stimulus: "<p class='block-instruction'>Block 6: Drücke die Leertaste bei <strong>jedem Buchstaben</strong> außer bei <strong>O</strong>.</p>", trial_duration: 8000 },
+      ...sartBlock2,
+      { type: jsPsychHtmlKeyboardResponse, stimulus: "<p class='block-instruction'>Vielen Dank für Ihre Teilnahme! Der Test ist beendet. Die Daten werden gespeichert.</p>", trial_duration: 10000 }
     ];
 
     let participantID = "";
+    let pauseCount = 0;
+    let autoPauseTimer = null;
+    let isPaused = false;
 
-    // ID bestätigen → dann Start-Button anzeigen
+    function startAutoPauseTimer() {
+      if (pauseCount < 3) {
+        autoPauseTimer = setTimeout(() => {
+          if (!isPaused) {
+            jsPsych.pauseExperiment();
+            document.getElementById('pause-overlay').style.display = 'flex';
+            isPaused = true;
+            pauseCount++;
+          }
+        }, 4 * 60 * 1000); // 4 Minuten Netto
+      }
+    }
+
+    // ID bestätigen
     document.getElementById("confirm-id-btn").addEventListener("click", () => {
       const input = document.getElementById("participant-id-input").value.trim();
       if (!input) {
         alert("Bitte gib deinen Namen ein.");
         return;
       }
-
       participantID = input;
-
-      // Eingabefeld ausblenden
       document.getElementById("participant-id-screen").style.display = "none";
-      // Einleitungstext
       document.getElementById("intro-text").style.display = "block";
-      //Start Button
-      document.getElementById("start-button").style.display = "inline";
     });
 
-    // Start-Button
+    // Start
     document.getElementById('start-button').addEventListener('click', () => {
-    document.getElementById('intro-text').style.display = 'none';
-    document.getElementById('start-button').style.display = 'none';
-    document.getElementById('pause-button').style.display = 'inline';
-    
-    jsPsych.run(fullTimeline);
+      document.getElementById('intro-text').style.display = 'none';
+      jsPsych.run(fullTimeline);
+      startAutoPauseTimer();
     });
-    
-    // Pause-Button
-    let isPaused = false;
+
+    // Pause-Overlay Fortsetzen
     document.getElementById('pause-button').addEventListener('click', () => {
-      if (!isPaused) {
-        jsPsych.pauseExperiment();
-        document.getElementById('pause-button').textContent = 'Fortsetzen';
-        isPaused = true;
-      } else {
+      if (isPaused) {
         jsPsych.resumeExperiment();
-        document.getElementById('pause-button').textContent = 'Pause';
         isPaused = false;
+        document.getElementById('pause-overlay').style.display = 'none';
+        if (pauseCount < 3) {
+          startAutoPauseTimer();
+        }
       }
     });
-
   </script>
 </body>
 </html>
